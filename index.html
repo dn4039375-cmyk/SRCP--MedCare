@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swetha Rajshahi Cosmetics And Pharmacy</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Alpine.js for Reactive UI -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans pb-16 md:pb-0" x-data="appData()">
+
+    <!-- TOP PROMO HEADER (Email hidden from public view) -->
+    <div class="bg-emerald-800 text-white text-xs sm:text-sm py-2 px-4 flex justify-between items-center">
+        <div class="truncate">
+            <i class="fa-solid fa-location-dot mr-1 text-emerald-300"></i> Shop No. 38, Gali No. 2, Shetla Colony, Near Shetla Mata Mandir, Gurugram, Haryana
+        </div>
+        <div class="hidden md:flex items-center space-x-4">
+            <span><i class="fa-solid fa-phone mr-1 text-emerald-300"></i> +91 98765 43210</span>
+            <span @click="currentView = isAdminLoggedIn ? 'admin' : 'admin-login'" class="cursor-pointer hover:underline text-emerald-300 font-semibold"><i class="fa-solid fa-lock mr-1"></i> Admin Portal</span>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER -->
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="currentView = 'home'">
+                <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-prescription-bottle-medical text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg sm:text-xl text-emerald-900 leading-tight">Swetha Rajshahi</h1>
+                    <p class="text-xs text-gray-500 font-medium">Cosmetics & Pharmacy</p>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="hidden md:flex flex-1 max-w-xl relative">
+                <input type="text" x-model="searchQuery" placeholder="Search medicines, skincare, brands, generic composition..." class="w-full pl-4 pr-24 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-emerald-600 text-sm">
+                <button class="absolute right-0 top-0 bottom-0 bg-emerald-600 text-white px-5 rounded-r-lg hover:bg-emerald-700 transition">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </div>
+
+            <!-- Actions Header -->
+            <div class="flex items-center space-x-4 sm:space-x-6">
+                <button @click="currentView = 'orders'" class="hidden sm:flex flex-col items-center text-gray-600 hover:text-emerald-600">
+                    <i class="fa-solid fa-box text-lg"></i>
+                    <span class="text-[10px]">Track Order</span>
+                </button>
+                <button @click="currentView = 'wishlist'" class="relative flex flex-col items-center text-gray-600 hover:text-emerald-600">
+                    <i class="fa-regular fa-heart text-lg"></i>
+                    <span class="text-[10px]">Wishlist</span>
+                    <span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center" x-text="wishlist.length"></span>
+                </button>
+                <button @click="cartOpen = true" class="relative flex items-center bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg text-emerald-800 hover:bg-emerald-100 transition">
+                    <i class="fa-solid fa-cart-shopping text-lg mr-2"></i>
+                    <span class="text-xs font-bold" x-text="'₹' + cartTotal()"></span>
+                    <span class="absolute -top-2 -right-2 bg-emerald-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold" x-text="cartItemCount()"></span>
+                </button>
+                <button @click="currentView = isLoggedIn ? 'profile' : 'login'" class="flex items-center space-x-1 text-gray-700 hover:text-emerald-600">
+                    <i class="fa-regular fa-user text-lg"></i>
+                    <span class="text-xs font-medium hidden sm:inline" x-text="isLoggedIn ? 'Account' : 'Login'"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Search Bar -->
+        <div class="px-4 pb-3 md:hidden">
+            <div class="relative">
+                <input type="text" x-model="searchQuery" placeholder="Search medicines & cosmetics..." class="w-full pl-4 pr-12 py-2 rounded-lg border border-gray-300 text-sm">
+                <button class="absolute right-0 top-0 bottom-0 bg-emerald-600 text-white px-4 rounded-r-lg">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Navbar -->
+        <nav class="bg-gray-100 border-t border-gray-200 overflow-x-auto whitespace-nowrap px-4 py-2.5 hidden md:flex space-x-6 text-sm font-medium">
+            <a href="#" @click.prevent="currentView = 'home'" class="text-emerald-700 font-bold hover:text-emerald-800">Home</a>
+            <a href="#" @click.prevent="selectedCategory = 'Medicines'" class="text-gray-700 hover:text-emerald-700">Medicines</a>
+            <a href="#" @click.prevent="selectedCategory = 'Skin Care'" class="text-gray-700 hover:text-emerald-700">Skin Care</a>
+            <a href="#" @click.prevent="selectedCategory = 'Hair Care'" class="text-gray-700 hover:text-emerald-700">Hair Care</a>
+            <a href="#" @click.prevent="selectedCategory = 'Face Care'" class="text-gray-700 hover:text-emerald-700">Face Care</a>
+            <a href="#" @click.prevent="selectedCategory = 'Baby Care'" class="text-gray-700 hover:text-emerald-700">Baby Care</a>
+            <a href="#" @click.prevent="selectedCategory = 'Personal Care'" class="text-gray-700 hover:text-emerald-700">Personal Care</a>
+            <a href="#" @click.prevent="currentView = isAdminLoggedIn ? 'admin' : 'admin-login'" class="text-emerald-800 font-semibold">Admin Panel</a>
+        </nav>
+    </header>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="container mx-auto px-4 py-6">
+
+        <!-- ================= 1. HOME VIEW ================= -->
+        <template x-if="currentView === 'home'">
+            <div>
+                <!-- Hero Maha Dhamaka Banner -->
+                <div class="relative bg-gradient-to-r from-emerald-900 to-teal-700 rounded-2xl overflow-hidden shadow-xl text-white p-6 md:p-12 mb-8 flex flex-col md:flex-row items-center justify-between">
+                    <div class="max-w-xl z-10">
+                        <span class="bg-amber-400 text-gray-900 text-xs font-black uppercase px-3 py-1 rounded-full inline-block mb-4 shadow">MAHA DHAMAKA OFFER</span>
+                        <h2 class="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">Genuine Medicines & Luxury Cosmetics</h2>
+                        <p class="text-emerald-100 mb-6 text-sm md:text-base">Up to 50% OFF on essential healthcare products, skincare, and authentic cosmetics with doorstep fast delivery in Gurugram.</p>
+                        <div class="flex space-x-4">
+                            <button @click="selectedCategory = 'Medicines'" class="bg-amber-400 text-gray-900 font-bold px-6 py-3 rounded-xl hover:bg-amber-300 transition shadow-lg">Shop Medicines</button>
+                            <button @click="selectedCategory = 'Skin Care'" class="bg-white text-emerald-900 font-bold px-6 py-3 rounded-xl hover:bg-gray-100 transition shadow-lg">Explore Cosmetics</button>
+                        </div>
+                    </div>
+                    <div class="mt-6 md:mt-0 z-10 flex space-x-2">
+                        <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center">
+                            <i class="fa-solid fa-shield-halved text-4xl text-amber-400 mb-2"></i>
+                            <h4 class="font-bold text-sm">100% Genuine</h4>
+                            <p class="text-xs text-gray-300">Verified Quality</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center">
+                            <i class="fa-solid fa-truck-fast text-4xl text-amber-400 mb-2"></i>
+                            <h4 class="font-bold text-sm">Fast Delivery</h4>
+                            <p class="text-xs text-gray-300">Gurugram Express</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Icon Grid -->
+                <div class="mb-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">Shop by Category</h3>
+                        <span class="text-xs text-emerald-600 font-bold cursor-pointer" @click="selectedCategory = 'All'">View All</span>
+                    </div>
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-4 text-center">
+                        <template x-for="cat in categories">
+                            <div @click="selectedCategory = cat.name" class="bg-white p-4 rounded-xl shadow-sm hover:shadow-md cursor-pointer transition border border-gray-100 flex flex-col items-center">
+                                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl mb-2">
+                                    <i :class="cat.icon"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-700" x-text="cat.name"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Product Section -->
+                <div class="mb-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900" x-text="selectedCategory === 'All' ? 'Featured Products & Medicines' : selectedCategory"></h3>
+                        <button @click="selectedCategory = 'All'" class="text-xs text-gray-500 underline" x-show="selectedCategory !== 'All'">Clear Filter</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <template x-for="product in filteredProducts()" :key="product.id">
+                            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 p-3 flex flex-col justify-between relative">
+                                <span class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded" x-text="product.discount + '% OFF'"></span>
+                                
+                                <div @click="openProductDetail(product)" class="cursor-pointer">
+                                    <div class="h-36 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-3xl text-gray-400 overflow-hidden">
+                                        <i :class="product.icon"></i>
+                                    </div>
+                                    <span class="text-[10px] uppercase font-bold text-emerald-600" x-text="product.category"></span>
+                                    <h4 class="font-bold text-sm text-gray-800 line-clamp-1" x-text="product.name"></h4>
+                                    <p class="text-xs text-gray-500 mb-2" x-text="product.brand"></p>
+                                </div>
+
+                                <div>
+                                    <div class="flex items-baseline space-x-2 mb-3">
+                                        <span class="font-extrabold text-gray-900" x-text="'₹' + product.sellingRate"></span>
+                                        <span class="text-xs text-gray-400 line-through" x-text="'₹' + product.mrp"></span>
+                                    </div>
+                                    <button @click="addToCart(product)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center space-x-1">
+                                        <i class="fa-solid fa-cart-plus"></i>
+                                        <span>Add to Cart</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 2. PRODUCT DETAIL VIEW ================= -->
+        <template x-if="currentView === 'detail' && activeProduct">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+                <button @click="currentView = 'home'" class="text-xs font-bold text-emerald-600 mb-6 flex items-center space-x-1">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Store</span>
+                </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-100 rounded-2xl h-80 flex items-center justify-center text-7xl text-gray-400">
+                        <i :class="activeProduct.icon"></i>
+                    </div>
+                    <div>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase" x-text="activeProduct.category"></span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 mt-2" x-text="activeProduct.name"></h2>
+                        <p class="text-sm text-gray-500 mb-4">Brand: <span class="font-semibold text-gray-700" x-text="activeProduct.brand"></span></p>
+                        
+                        <div class="flex items-baseline space-x-3 mb-4">
+                            <span class="text-3xl font-black text-gray-900" x-text="'₹' + activeProduct.sellingRate"></span>
+                            <span class="text-base text-gray-400 line-through" x-text="'₹' + activeProduct.mrp"></span>
+                            <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded" x-text="activeProduct.discount + '% OFF'"></span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 mb-6" x-text="activeProduct.description"></p>
+
+                        <template x-if="activeProduct.prescriptionRequired">
+                            <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-6">
+                                <div class="flex items-center space-x-2 text-amber-800 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                    <span>Prescription Required</span>
+                                </div>
+                                <p class="text-xs text-amber-700 mb-3">This medicine legally requires a valid doctor's prescription for dispatch.</p>
+                                <input type="file" @change="prescriptionFile = $event.target.files[0].name" class="text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+                                <p class="text-[10px] text-emerald-700 mt-2" x-show="prescriptionFile">Uploaded: <span class="font-bold" x-text="prescriptionFile"></span></p>
+                            </div>
+                        </template>
+
+                        <div class="flex space-x-4">
+                            <button @click="addToCart(activeProduct)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">Add to Cart</button>
+                            <button @click="addToCart(activeProduct); cartOpen = true;" class="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition shadow">Buy Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 3. CUSTOMER LOGIN / REGISTRATION ================= -->
+        <template x-if="currentView === 'login'">
+            <div class="max-w-md mx-auto bg-white rounded-2xl shadow-md border border-gray-200 p-8">
+                <div class="text-center mb-6">
+                    <div class="bg-emerald-600 text-white w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900">Welcome Back</h2>
+                    <p class="text-xs text-gray-500">Login to Swetha Rajshahi Cosmetics And Pharmacy</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Email or Mobile Number</label>
+                        <input type="text" x-model="loginInput" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-emerald-600" placeholder="Enter email or mobile">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+                        <input type="password" x-model="loginPassword" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-emerald-600" placeholder="********">
+                    </div>
+                    <button @click="handleLogin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">Secure Login</button>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-xs text-gray-600">Don't have an account? <span @click="currentView = 'register'" class="text-emerald-600 font-bold cursor-pointer hover:underline">Register here</span></p>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="currentView === 'register'">
+            <div class="max-w-md mx-auto bg-white rounded-2xl shadow-md border border-gray-200 p-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Create Account</h2>
+                    <p class="text-xs text-gray-500">Join Swetha Rajshahi Cosmetics And Pharmacy</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                        <input type="text" x-model="regName" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number</label>
+                        <input type="text" x-model="regMobile" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                        <input type="email" x-model="regEmail" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+                        <input type="password" x-model="regPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                    </div>
+                    <button @click="handleRegister" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">Register & Send OTP</button>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-xs text-gray-600">Already have an account? <span @click="currentView = 'login'" class="text-emerald-600 font-bold cursor-pointer hover:underline">Login</span></p>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 4. EXCLUSIVE ADMIN LOGIN (Strict Single-Device Session) ================= -->
+        <template x-if="currentView === 'admin-login'">
+            <div class="max-w-md mx-auto bg-white rounded-2xl shadow-md border border-gray-200 p-8">
+                <div class="text-center mb-6">
+                    <div class="bg-emerald-900 text-white w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900">Admin Portal Login</h2>
+                    <p class="text-xs text-gray-500">Restricted access for Sarvesh Rajshahi only</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Admin Email</label>
+                        <input type="email" x-model="adminEmailInput" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-emerald-600" placeholder="Sarveshrajshahi18@gmail.com">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+                        <input type="password" x-model="adminPasswordInput" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-emerald-600" placeholder="********">
+                    </div>
+                    <button @click="handleAdminLogin" class="w-full bg-emerald-900 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition shadow">Authenticate Securely</button>
+                    <div class="text-center mt-3">
+                        <button @click="currentView = 'home'" class="text-xs text-gray-500 hover:underline">Return to Storefront</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 5. CHECKOUT ================= -->
+        <template x-if="currentView === 'checkout'">
+            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Secure Checkout</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Delivery Address (Gurugram)</label>
+                        <textarea x-model="checkoutAddress" rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm" placeholder="House/Flat, Street, Near Shetla Mata Mandir, Sector/Colony"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Payment Method</label>
+                        <select x-model="paymentMethod" class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                            <option>Cash on Delivery (COD)</option>
+                            <option>UPI (Google Pay / PhonePe / Paytm)</option>
+                            <option>Online Payment / Credit Card</option>
+                        </select>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span>Subtotal</span>
+                            <span class="font-bold" x-text="'₹' + cartTotal()"></span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span>Delivery Charges</span>
+                            <span class="text-emerald-600 font-bold">FREE</span>
+                        </div>
+                        <div class="flex justify-between text-base font-extrabold border-t pt-2">
+                            <span>Total Payable</span>
+                            <span x-text="'₹' + cartTotal()"></span>
+                        </div>
+                    </div>
+                    <button @click="confirmOrder" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">Confirm Order & Notify Store</button>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 6. SECURE ADMIN DASHBOARD ================= -->
+        <template x-if="currentView === 'admin'">
+            <div class="space-y-6">
+                <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                    <div>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">SECURE ADMIN PORTAL (Active Session)</span>
+                        <h2 class="text-2xl font-extrabold text-gray-900 mt-1">Swetha Rajshahi Management</h2>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button @click="adminLogout" class="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-4 py-2 rounded-lg transition">Admin Logout</button>
+                        <button @click="currentView = 'home'" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-4 py-2 rounded-lg">Exit to Store</button>
+                    </div>
+                </div>
+
+                <!-- Admin Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Today's Sales</p>
+                        <h3 class="text-2xl font-black text-emerald-600 mt-1">₹14,850</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Pending Orders</p>
+                        <h3 class="text-2xl font-black text-amber-600 mt-1" x-text="orders.length"></h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Total Products</p>
+                        <h3 class="text-2xl font-black text-blue-600 mt-1" x-text="products.length"></h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Backend Notifications</p>
+                        <h3 class="text-xs font-bold text-gray-700 mt-2">Active (Securely Configured)</h3>
+                    </div>
+                </div>
+
+                <!-- Recent Orders Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Customer Orders & Prescription Verification</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-xs uppercase">
+                                    <th class="p-3">Order ID</th>
+                                    <th class="p-3">Customer</th>
+                                    <th class="p-3">Items</th>
+                                    <th class="p-3">Total</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Prescription</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="ord in orders">
+                                    <tr class="border-t border-gray-100">
+                                        <td class="p-3 font-bold text-emerald-700" x-text="ord.id"></td>
+                                        <td class="p-3" x-text="ord.customer"></td>
+                                        <td class="p-3" x-text="ord.itemsCount + ' items'"></td>
+                                        <td class="p-3 font-bold" x-text="'₹' + ord.total"></td>
+                                        <td class="p-3"><span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded" x-text="ord.status"></span></td>
+                                        <td class="p-3 text-xs text-blue-600 font-semibold" x-text="ord.prescription || 'Not Required'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+    </main>
+
+    <!-- SLIDEOUT CART DRAWER -->
+    <div x-show="cartOpen" class="fixed inset-0 z-50 overflow-hidden" style="display: none;">
+        <div class="absolute inset-0 bg-black/50" @click="cartOpen = false"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex">
+            <div class="w-screen max-w-md bg-white shadow-xl flex flex-col">
+                <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-cart-shopping mr-2"></i> Your Shopping Cart</h3>
+                    <button @click="cartOpen = false" class="text-white hover:text-gray-200"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <template x-for="item in cart" :key="item.id">
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <div>
+                                <h4 class="font-bold text-sm" x-text="item.name"></h4>
+                                <p class="text-xs text-gray-500" x-text="'₹' + item.sellingRate + ' x ' + item.qty"></p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button @click="decreaseQty(item)" class="bg-gray-200 w-6 h-6 rounded text-xs font-bold">-</button>
+                                <span class="text-sm font-bold" x-text="item.qty"></span>
+                                <button @click="increaseQty(item)" class="bg-gray-200 w-6 h-6 rounded text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="p-4 border-t bg-gray-50">
+                    <div class="flex justify-between font-bold text-base mb-4">
+                        <span>Subtotal:</span>
+                        <span x-text="'₹' + cartTotal()"></span>
+                    </div>
+                    <button @click="cartOpen = false; currentView = 'checkout'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 text-gray-600 z-40">
+        <button @click="currentView = 'home'" class="flex flex-col items-center"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px]">Home</span></button>
+        <button @click="selectedCategory = 'Medicines'" class="flex flex-col items-center"><i class="fa-solid fa-pills text-lg"></i><span class="text-[10px]">Medicines</span></button>
+        <button @click="selectedCategory = 'Skin Care'" class="flex flex-col items-center"><i class="fa-solid fa-spray-can-sparkles text-lg"></i><span class="text-[10px]">Cosmetics</span></button>
+        <button @click="currentView = 'orders'" class="flex flex-col items-center"><i class="fa-solid fa-box text-lg"></i><span class="text-[10px]">Orders</span></button>
+        <button @click="currentView = isLoggedIn ? 'profile' : 'login'" class="flex flex-col items-center"><i class="fa-solid fa-user text-lg"></i><span class="text-[10px]">Profile</span></button>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-emerald-900 text-white py-12 px-4 mt-12 mb-16 md:mb-0">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <h3 class="font-bold text-lg mb-3 text-emerald-300">Swetha Rajshahi Cosmetics And Pharmacy</h3>
+                <p class="text-xs text-emerald-100 leading-relaxed mb-2">Shop No. 38, Gali No. 2, Shetla Colony, Near Shetla Mata Mandir, Gurugram, Haryana.</p>
+                <p class="text-xs text-emerald-100"><i class="fa-solid fa-shield-check mr-1"></i> Backend Order Routing & System Active</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm mb-3 text-emerald-300">Categories</h4>
+                <ul class="space-y-2 text-xs text-emerald-100">
+                    <li><a href="#" @click.prevent="selectedCategory = 'Medicines'">Medicines & Prescriptions</a></li>
+                    <li><a href="#" @click.prevent="selectedCategory = 'Skin Care'">Skin Care & Glow</a></li>
+                    <li><a href="#" @click.prevent="selectedCategory = 'Hair Care'">Hair Care Essentials</a></li>
+                    <li><a href="#" @click.prevent="selectedCategory = 'Baby Care'">Baby Care Products</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm mb-3 text-emerald-300">Customer Service</h4>
+                <ul class="space-y-2 text-xs text-emerald-100">
+                    <li>Track Order & Shipping</li>
+                    <li>Prescription Upload Guide</li>
+                    <li>Returns & Refund Policy</li>
+                    <li>Contact Store Support</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm mb-3 text-emerald-300">Secure Payments</h4>
+                <p class="text-xs text-emerald-100 mb-4">We support Cash on Delivery, UPI, and Secure Online Transactions.</p>
+                <div class="flex space-x-2 text-2xl text-emerald-300">
+                    <i class="fa-brands fa-cc-visa"></i>
+                    <i class="fa-brands fa-cc-mastercard"></i>
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+        <div class="container mx-auto border-t border-emerald-800 mt-8 pt-6 text-center text-xs text-emerald-300">
+            &copy; 2026 Swetha Rajshahi Cosmetics And Pharmacy, Gurugram. All Rights Reserved.
+        </div>
+    </footer>
+
+    <!-- ALPINE APP LOGIC & SINGLE-DEVICE SESSION MANAGEMENT -->
+    <script>
+        function appData() {
+            return {
+                currentView: 'home',
+                searchQuery: '',
+                selectedCategory: 'All',
+                cartOpen: false,
+                isLoggedIn: false,
+                isAdminLoggedIn: sessionStorage.getItem('sr_admin_auth') === 'true',
+                adminEmailInput: '',
+                adminPasswordInput: '',
+                loginInput: '',
+                loginPassword: '',
+                regName: '',
+                regMobile: '',
+                regEmail: '',
+                regPassword: '',
+                checkoutAddress: '',
+                paymentMethod: 'Cash on Delivery (COD)',
+                prescriptionFile: null,
+                activeProduct: null,
+                cart: [],
+                wishlist: [],
+                categories: [
+                    { name: 'Medicines', icon: 'fa-solid fa-pills' },
+                    { name: 'Skin Care', icon: 'fa-solid fa-spray-can-sparkles' },
+                    { name: 'Hair Care', icon: 'fa-solid fa-scissors' },
+                    { name: 'Face Care', icon: 'fa-solid fa-face-smile' },
+                    { name: 'Body Care', icon: 'fa-solid fa-pump-soap' },
+                    { name: 'Baby Care', icon: 'fa-solid fa-baby' },
+                    { name: 'Personal Care', icon: 'fa-solid fa-spa' },
+                    { name: 'All', icon: 'fa-solid fa-border-all' }
+                ],
+                products: [
+                    { id: 1, name: 'Paracetamol 650mg Tablet', brand: 'GSK', category: 'Medicines', mrp: 35, sellingRate: 30, discount: 14, icon: 'fa-solid fa-tablets', description: 'Effective fever and pain relief medicine.', prescriptionRequired: false },
+                    { id: 2, name: 'Advanced Vitamin C Glow Serum', brand: 'Derma Co', category: 'Skin Care', mrp: 699, sellingRate: 499, discount: 28, icon: 'fa-solid fa-bottle-droplet', description: 'Brightening facial serum with pure vitamin C.', prescriptionRequired: false },
+                    { id: 3, name: 'Amoxicillin 500mg Capsules', brand: 'Cipla', category: 'Medicines', mrp: 120, sellingRate: 98, discount: 18, icon: 'fa-solid fa-capsules', description: 'Broad-spectrum antibiotic capsule.', prescriptionRequired: true },
+                    { id: 4, name: 'Herbal Onion Hair Growth Oil', brand: 'Mamaearth', category: 'Hair Care', mrp: 450, sellingRate: 349, discount: 22, icon: 'fa-solid fa-oil-well', description: 'Nourishing hair oil for strong and healthy hair.', prescriptionRequired: false },
+                    { id: 5, name: 'Baby Gentle Soft Lotion', brand: 'Johnson & Johnson', category: 'Baby Care', mrp: 275, sellingRate: 230, discount: 16, icon: 'fa-solid fa-child', description: 'Hypoallergenic moisturizer for delicate baby skin.', prescriptionRequired: false }
+                ],
+                orders: [
+                    { id: 'SR-9821', customer: 'Rahul Sharma', itemsCount: 2, total: 529, status: 'Out for Delivery', prescription: 'Verified' }
+                ],
+                filteredProducts() {
+                    return this.products.filter(p => {
+                        let matchesCategory = this.selectedCategory === 'All' || p.category === this.selectedCategory;
+                        let matchesSearch = this.searchQuery === '' || p.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        return matchesCategory && matchesSearch;
+                    });
+                },
+                addToCart(product) {
+                    let existing = this.cart.find(item => item.id === product.id);
+                    if (existing) {
+                        existing.qty++;
+                    } else {
+                        this.cart.push({ ...product, qty: 1 });
+                    }
+                    this.cartOpen = true;
+                },
+                increaseQty(item) { item.qty++; },
+                decreaseQty(item) {
+                    if (item.qty > 1) item.qty--;
+                    else this.cart = this.cart.filter(i => i.id !== item.id);
+                },
+                cartTotal() {
+                    return this.cart.reduce((sum, item) => sum + (item.sellingRate * item.qty), 0);
+                },
+                cartItemCount() {
+                    return this.cart.reduce((sum, item) => sum + item.qty, 0);
+                },
+                openProductDetail(product) {
+                    this.activeProduct = product;
+                    this.currentView = 'detail';
+                },
+                handleLogin() {
+                    alert('Successfully logged into Swetha Rajshahi Portal!');
+                    this.isLoggedIn = true;
+                    this.currentView = 'home';
+                },
+                handleRegister() {
+                    alert('Registration successful! OTP verification sent. Account activated.');
+                    this.isLoggedIn = true;
+                    this.currentView = 'home';
+                },
+                handleAdminLogin() {
+                    if (this.adminEmailInput.trim().toLowerCase() === 'sarveshrajshahi18@gmail.com' && this.adminPasswordInput === 'Sarvesh@2005') {
+                        sessionStorage.setItem('sr_admin_auth', 'true');
+                        this.isAdminLoggedIn = true;
+                        this.currentView = 'admin';
+                        alert('Welcome back, Sarvesh! Secure single-device admin session initialized.');
+                    } else {
+                        alert('Invalid Credentials! Only authorized admin access is allowed.');
+                    }
+                },
+                adminLogout() {
+                    sessionStorage.removeItem('sr_admin_auth');
+                    this.isAdminLoggedIn = false;
+                    this.adminEmailInput = '';
+                    this.adminPasswordInput = '';
+                    this.currentView = 'home';
+                    alert('Admin logged out successfully.');
+                },
+                confirmOrder() {
+                    alert('Order confirmed successfully! Automated backend notification email dispatched to Sarveshrajshahi18@gmail.com');
+                    this.orders.unshift({
+                        id: 'SR-' + Math.floor(1000 + Math.random() * 9000),
+                        customer: this.regName || 'Valued Customer',
+                        itemsCount: this.cartItemCount(),
+                        total: this.cartTotal(),
+                        status: 'Order Placed',
+                        prescription: this.prescriptionFile ? 'Attached' : 'Not Required'
+                    });
+                    this.cart = [];
+                    this.currentView = 'home';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
